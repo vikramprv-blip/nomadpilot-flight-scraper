@@ -1,20 +1,19 @@
-# Dockerfile (place this at your repo root)
-# Use the official Playwright image — comes with browsers and all dependencies preinstalled
+# Use the official Playwright image with browsers + system deps preinstalled
 FROM mcr.microsoft.com/playwright:v1.45.0-jammy
 
-# App working directory
 WORKDIR /app
 
-# Install Node dependencies (use lockfile if you have one)
-COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev
+# Copy package manifest(s). The wildcard keeps working even if you later add a lockfile.
+COPY package*.json ./
+
+# Since you don't have package-lock.json, use npm install (not npm ci)
+RUN npm install --omit=dev --no-audit --no-fund
 
 # Copy the rest of your app
 COPY . .
 
-# Render will send PORT env; expose and use it
+# Render will set PORT; provide a default for local runs
 ENV PORT=3001
 EXPOSE 3001
 
-# Start your server
 CMD ["node", "server.js"]
