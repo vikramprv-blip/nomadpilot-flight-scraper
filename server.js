@@ -6,24 +6,37 @@ import { scrapeKiwi } from "./scrapers/kiwi.js";
 const app = express();
 app.use(cors());
 
+// Health
 app.get("/", (_req, res) => {
   res.send("NomadPilot Flight Scraper API is running.");
 });
 
 app.get("/search", async (req, res) => {
   const { from, to, date } = req.query;
-  if (!from || !to || !date) return res.status(400).json({ error: "Missing from, to, or date" });
+
+  // Basic validation
+  if (
+    !from || typeof from !== "string" ||
+    !to   || typeof to   !== "string" ||
+    !date || typeof date !== "string"
+  ) {
+    return res.status(400).json({ error: "Missing from, to, or date" });
+  }
 
   try {
+    // Run both sources in parallel
     const [google, kiwi] = await Promise.all([
       scrapeGoogleFlights(from, to, date),
       scrapeKiwi(from, to, date),
     ]);
+
+    // Combine and sort by numeric price (fallback very high if not parseable)
     const results = [...google, ...kiwi].sort((a, b) => {
-      const p1 = parseInt(a.price?.replace(/\D/g, "")) || 9999999;
-      const p2 = parseInt(b.price?.replace(/\D/g, "")) || 9999999;
+      const p1 = parseInt(String(a.price ?? "").replace(/\D/g, ""), 10) || 9_999_999;
+      const p2 = parseInt(String(b.price ?? "").replace(/\D/g, ""), 10) || 9_999_999;
       return p1 - p2;
     });
+
     res.json({ results });
   } catch (err) {
     console.error("Scraper error:", err);
