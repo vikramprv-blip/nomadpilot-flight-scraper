@@ -14,17 +14,16 @@ export async function scrapeGoogleFlights(from, to, date) {
     const page = await browser.newPage({
       viewport: { width: 1400, height: 2000 },
       userAgent:
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_8) " +
         "AppleWebKit/537.36 (KHTML, like Gecko) " +
         "Chrome/123.0.0.0 Safari/537.36"
     });
 
-    const query = encodeURIComponent(
-      `flights from ${from} to ${to} on ${date}`
-    );
-    const url = `https://www.google.com/travel/flights?q=${query}`;
+    const q = encodeURIComponent(`flights from ${from} to ${to} on ${date}`);
+    const url = `https://www.google.com/travel/flights?q=${q}`;
 
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 90000 });
+
     await page.waitForTimeout(3000);
 
     for (let i = 0; i < 4; i++) {
@@ -41,15 +40,13 @@ export async function scrapeGoogleFlights(from, to, date) {
 
       return cards.map(card => {
         const airline = card.querySelector("img[alt]")?.alt || "";
-
         const price =
           card.querySelector("span[jscontroller] span")?.textContent?.trim() ||
           (card.textContent.match(/(\$|€|£)\s?\d+[.,]?\d*/) || [])[0] ||
           "";
-
         const times = Array.from(
           card.querySelectorAll("div[aria-label*='flight']")
-        ).map(n => n.textContent.trim());
+        ).map(el => el.textContent.trim());
 
         return {
           airline,
@@ -62,8 +59,8 @@ export async function scrapeGoogleFlights(from, to, date) {
     });
 
     return flights;
-  } catch (err) {
-    console.error("[scrapeGoogleFlights] failed:", err);
+  } catch (error) {
+    console.error("[scrapeGoogleFlights] failed:", error);
     return [];
   } finally {
     await browser.close().catch(() => {});
