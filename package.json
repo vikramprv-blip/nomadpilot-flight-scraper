@@ -1,19 +1,18 @@
 {
   "name": "nomadpilot-flight-scraper",
   "version": "1.0.0",
-  "description": "Flight Search Scraper for Google Flights and Kiwi (Render-ready)",
-  "main": "server.js",
   "type": "module",
+  "description": "Local Google Flights scraper for NomadPilot",
+  "main": "server.js",
   "scripts": {
-    "build": "echo \"Nothing to build\"",
     "start": "node server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.18.2",
-    "playwright": "^1.45.0"
+    "playwright": "1.41.2"
   },
-"engines": {
-  "node": ">=20"
-}
+  "engines": {
+    "node": ">=18 <=20"
+  }
 }
