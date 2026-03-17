@@ -8,35 +8,47 @@ export async function scrapeKiwi(from, to, date) {
 
   try {
     const page = await browser.newPage({
+      viewport: { width: 1280, height: 2000 },
       userAgent:
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0 Safari/537.36"
     });
 
     const url = `https://www.kiwi.com/en/search/results/${from}/${to}/${date}`;
+    await page.goto(url, { waitUntil: "networkidle", timeout: 90000 });
 
-    // Load page
-    await page.goto(url, {
-      waitUntil: "domcontentloaded",
-      timeout: 90000
-    });
-
-    // Handle cookie popup (best effort)
+    // Try to accept cookies (best effort)
     try {
       await page.click("[data-test='CookiesPopup-Accept']", { timeout: 5000 });
     } catch {}
 
-    // Wait for price elements (more stable)
-    await page.waitForSelector("[data-test='ResultCardPrice']", {
+    // Scroll to force lazy loading
+    for (let i = 0; i < 5; i++) {
+      await page.mouse.wheel(0, 800);
+      await page.waitForTimeout(1500);
+    }
+
+    // This selector ALWAYS exists, even when price nodes are hidden:
+    await page.waitForSelector("[data-test='ResultCardWrapper']", {
       timeout: 90000
     });
 
+    // Extract visible price text dynamically, fallback to alternative spans
     const flights = await page.evaluate(() => {
-      const cards = [...document.querySelectorAll("[data-test='ResultCardWrapper']")].slice(0, 10);
+      const cards = [...document.querySelectorAll("[data-test='ResultCardWrapper']")];
 
-      return cards.map(card => {
-        const airline = card.querySelector("[data-test='AirlineLogo']")?.getAttribute("alt") || "";
-        const price = card.querySelector("[data-test='ResultCardPrice']")?.textContent?.trim() || "";
-        const times = [...card.querySelectorAll("[data-test='SegmentTimes']")].map(t => t.textContent);
+      return cards.slice(0, 10).map(card => {
+        // Kiwi sometimes nests price deep inside spans, so fallback to regex-based extraction
+        let price =
+          card.querySelector("[data-test='ResultCardPrice']")?.textContent?.trim() ||
+          card.textContent.match(/(\$|€|£)\s?\d+([.,]\d{3})*/)?.[0] ||
+          "";
+
+        const airline =
+          card.querySelector("[data-test='AirlineLogo']")?.getAttribute("alt") || "";
+
+        const times = [...card.querySelectorAll("[data-test='SegmentTimes']")].map(t =>
+          t.textContent.trim()
+        );
 
         return {
           airline,
