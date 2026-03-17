@@ -1,4 +1,3 @@
-scrapers/kiwi.js
 import { chromium } from "playwright";
 
 /**
