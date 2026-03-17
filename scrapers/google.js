@@ -22,26 +22,18 @@ export async function scrapeGoogleFlights(from, to, date) {
     const query = encodeURIComponent(`flights from ${from} to ${to} on ${date}`);
     const url = `https://www.google.com/travel/flights?q=${query}`;
 
-    // Load page and wait for dynamic JS
-    await page.goto(url, {
-      waitUntil: "domcontentloaded",
-      timeout: 90000
-    });
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 90000 });
 
-    // Hydration wait
     await page.waitForTimeout(3000);
 
-    // Scroll to force flights to load
     for (let i = 0; i < 4; i++) {
       await page.mouse.wheel(0, 1200);
       await page.waitForTimeout(1000);
     }
 
-    // Wait for actual flight result containers
     await page.waitForSelector("div[role='listitem']", { timeout: 90000 });
 
     const flights = await page.evaluate(() => {
-      // Extract flight cards
       const cards = [...document.querySelectorAll("div[role='listitem']")].slice(0, 10);
 
       return cards.map(card => {
