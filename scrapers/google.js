@@ -1,7 +1,10 @@
 import { chromium } from "playwright";
 
 export async function scrapeGoogleFlights(from, to, date) {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+  headless: true,
+  args: ["--no-sandbox", "--disable-setuid-sandbox"]
+});
   const page = await browser.newPage();
 
   const query = `flights from ${from} to ${to} on ${date}`;
