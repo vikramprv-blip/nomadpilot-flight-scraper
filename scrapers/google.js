@@ -3,35 +3,57 @@ import { chromium } from "playwright";
 export async function scrapeGoogleFlights(from, to, date) {
   const browser = await chromium.launch({
     headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-blink-features=AutomationControlled"
+    ]
   });
 
   try {
     const page = await browser.newPage({
+      viewport: { width: 1400, height: 2000 },
       userAgent:
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+        "AppleWebKit/537.36 (KHTML, like Gecko) " +
+        "Chrome/123.0.0.0 Safari/537.36"
     });
 
-    const q = encodeURIComponent(`flights from ${from} to ${to} on ${date}`);
-    const url = `https://www.google.com/travel/flights?q=${q}`;
+    const query = encodeURIComponent(`flights from ${from} to ${to} on ${date}`);
+    const url = `https://www.google.com/travel/flights?q=${query}`;
 
+    // Load page and wait for dynamic JS
     await page.goto(url, {
       waitUntil: "domcontentloaded",
       timeout: 90000
     });
 
-    // Wait for price elements
-    await page.waitForSelector("span[jscontroller] span", {
-      timeout: 90000
-    });
+    // Hydration wait
+    await page.waitForTimeout(3000);
+
+    // Scroll to force flights to load
+    for (let i = 0; i < 4; i++) {
+      await page.mouse.wheel(0, 1200);
+      await page.waitForTimeout(1000);
+    }
+
+    // Wait for actual flight result containers
+    await page.waitForSelector("div[role='listitem']", { timeout: 90000 });
 
     const flights = await page.evaluate(() => {
-      const cards = [...document.querySelectorAll("div[role='listitem']")].slice(0, 8);
+      // Extract flight cards
+      const cards = [...document.querySelectorAll("div[role='listitem']")].slice(0, 10);
 
       return cards.map(card => {
         const airline = card.querySelector("img[alt]")?.alt || "";
-        const price = card.querySelector("span[jscontroller] span")?.textContent?.trim() || null;
-        const times = [...card.querySelectorAll("div[aria-label*='flight']")].map(t => t.textContent);
+
+        const price =
+          card.querySelector("span[jscontroller] span")?.textContent?.trim() ||
+          card.textContent.match(/(\$|€|£)\s?\d+[.,]?\d*/)?.[0] ||
+          "";
+
+        const timeNodes = [...card.querySelectorAll("div[aria-label*='flight']")];
+        const times = timeNodes.map(node => node.textContent.trim());
 
         return {
           airline,
