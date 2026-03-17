@@ -22,27 +22,17 @@ export async function scrapeGoogleFlights(from, to, date) {
     const query = encodeURIComponent(
       `flights from ${from} to ${to} on ${date}`
     );
-
     const url = `https://www.google.com/travel/flights?q=${query}`;
 
-    await page.goto(url, {
-      waitUntil: "domcontentloaded",
-      timeout: 90000
-    });
-
-    // allow Google flights UI to hydrate
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 90000 });
     await page.waitForTimeout(3000);
 
-    // scroll to trigger lazy loading
     for (let i = 0; i < 4; i++) {
       await page.mouse.wheel(0, 1200);
       await page.waitForTimeout(1000);
     }
 
-    // wait for visible flight cards
-    await page.waitForSelector("div[role='listitem']", {
-      timeout: 90000
-    });
+    await page.waitForSelector("div[role='listitem']", { timeout: 90000 });
 
     const flights = await page.evaluate(() => {
       const cards = Array.from(
@@ -57,10 +47,9 @@ export async function scrapeGoogleFlights(from, to, date) {
           (card.textContent.match(/(\$|€|£)\s?\d+[.,]?\d*/) || [])[0] ||
           "";
 
-        const timeNodes = Array.from(
+        const times = Array.from(
           card.querySelectorAll("div[aria-label*='flight']")
-        );
-        const times = timeNodes.map(n => n.textContent.trim());
+        ).map(n => n.textContent.trim());
 
         return {
           airline,
