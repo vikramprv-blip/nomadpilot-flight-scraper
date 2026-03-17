@@ -1,18 +1,17 @@
-# Use the official Playwright image with browsers + system deps preinstalled
-FROM mcr.microsoft.com/playwright:v1.45.0-jammy
+# Use latest matching Playwright image
+FROM mcr.microsoft.com/playwright:v1.58.2-jammy
 
 WORKDIR /app
 
-# Copy package manifest(s). The wildcard keeps working even if you later add a lockfile.
+# Copy manifests
 COPY package*.json ./
 
-# Since you don't have package-lock.json, use npm install (not npm ci)
+# Install node dependencies
 RUN npm install --omit=dev --no-audit --no-fund
 
-# Copy the rest of your app
+# Copy the rest
 COPY . .
 
-# Render will set PORT; provide a default for local runs
 ENV PORT=3001
 EXPOSE 3001
 
