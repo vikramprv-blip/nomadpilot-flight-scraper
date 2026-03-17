@@ -5,12 +5,12 @@ import { scrapeGoogleFlights } from "./scrapers/google.js";
 const app = express();
 app.use(cors());
 
-// Health route
+// Health check
 app.get("/", (_req, res) => {
   res.send("NomadPilot Flight Scraper API is running.");
 });
 
-// Search route
+// Flight search
 app.get("/search", async (req, res) => {
   const { from, to, date } = req.query;
 
@@ -21,13 +21,13 @@ app.get("/search", async (req, res) => {
   try {
     const results = await scrapeGoogleFlights(from, to, date);
     res.json({ results });
-  } catch (err) {
-    console.error("[server] Scraper error:", err);
-    return res.status(500).json({ error: "Scraping failed." });
+  } catch (error) {
+    console.error("[server] Scraping error:", error);
+    res.status(500).json({ error: "Scraping failed." });
   }
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Flight Scraper running on ${PORT}`);
-});
+app.listen(PORT, () =>
+  console.log(`NomadPilot Scraper running locally on port ${PORT}`)
+);
