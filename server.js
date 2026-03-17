@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import { scrapeGoogleFlights } from "./scrapers/google.js";
-import { scrapeKiwi } from "./scrapers/kiwi.js";
 
 const app = express();
 app.use(cors());
@@ -25,9 +24,8 @@ app.get("/search", async (req, res) => {
 
   try {
     // Run both sources in parallel
-    const [google, kiwi] = await Promise.all([
-      scrapeGoogleFlights(from, to, date),
-      scrapeKiwi(from, to, date),
+   const google = await scrapeGoogleFlights(from, to, date);
+const results = google;
     ]);
 
     // Combine and sort by numeric price (fallback very high if not parseable)
