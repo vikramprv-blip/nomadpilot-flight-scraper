@@ -8,7 +8,10 @@ import { chromium } from "playwright";
  * @returns {Promise<Array<{airline:string, price:string, departure:string, arrival:string, source:string}>>}
  */
 export async function scrapeKiwi(from, to, date) {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+  headless: true,
+  args: ["--no-sandbox", "--disable-setuid-sandbox"]
+});
 
   // small random delay (helps avoid soft-blocks and gives page time to settle)
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
